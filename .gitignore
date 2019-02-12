@@ -38,6 +38,7 @@ framework/test/network/networkTestsLogger.logs
 # Coverage directory used by tools like istanbul
 test/.coverage-unit/
 framework/test/.coverage-unit/
+framework/test/mocha/.coverage-unit/
 
 # Local config file useful for development
 config.local.json

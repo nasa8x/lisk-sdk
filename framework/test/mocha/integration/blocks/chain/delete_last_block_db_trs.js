@@ -60,9 +60,6 @@ describe('system test (blocks) - chain/popLastBlock', () => {
 			passphrase: accountFixtures.genesis.passphrase,
 			recipientId: blockAccount1.address,
 		});
-		fundTrsForAccount1.amount = new Bignum(fundTrsForAccount1.amount);
-		fundTrsForAccount1.fee = new Bignum(fundTrsForAccount1.fee);
-		fundTrsForAccount1.senderId = accountFixtures.genesis.address;
 
 		localCommon.createValidBlock(library, [fundTrsForAccount1], (err, b) => {
 			expect(err).to.not.exist;

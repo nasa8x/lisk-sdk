@@ -70,7 +70,7 @@ __private.updateSendersRoundInformationWithAmountForTransactions = function(
 	forwardTick,
 	tx
 ) {
-	return transactions.map(transaction => {
+	return Promise.all(transactions.map(transaction => {
 		const value = new Bignumber(transaction.amount).plus(transaction.fee);
 		const valueToUpdate = forwardTick ? `-${value}` : `${value}`;
 		return self.createRoundInformationWithAmount(
@@ -79,7 +79,7 @@ __private.updateSendersRoundInformationWithAmountForTransactions = function(
 			valueToUpdate,
 			tx
 		);
-	});
+	}));
 };
 
 __private.updateRecipientsRoundInformationWithAmountForTransactions = function(
@@ -133,10 +133,10 @@ __private.updateRoundInformationWithDelegatesForTransactions = function(
 	forwardTick,
 	tx
 ) {
-	return transactions
+	return Promise.all(transactions
 		.filter(transaction => transaction.type === transactionTypes.VOTE)
 		.map(transaction =>
-			(forwardTick
+			Promise.all((forwardTick
 				? transaction.asset.votes
 				: Diff.reverse(transaction.asset.votes)
 			).map(vote => {
@@ -150,8 +150,8 @@ __private.updateRoundInformationWithDelegatesForTransactions = function(
 					mode,
 					tx
 				);
-			})
-		);
+			}))
+		));
 };
 
 __private.updateRoundInformationForTransactions = function(
@@ -180,7 +180,7 @@ __private.updateRoundInformationForTransactions = function(
 			forwardTick,
 			tx
 		),
-	].reduce((accPromises, currPromises) => accPromises.concat(currPromises), []);
+	];
 	return Promise.all(promises)
 		.then(() => setImmediate(cb))
 		.catch(err => setImmediate(cb, err));

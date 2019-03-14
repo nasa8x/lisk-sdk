@@ -164,6 +164,8 @@ function addTransaction(library, transaction, cb) {
 			transaction,
 			true,
 			err => {
+				console.log('err');
+				console.log(err);
 				if (err) {
 					return setImmediate(sequenceCb, err.toString());
 				}

@@ -15,6 +15,7 @@
 'use strict';
 
 const async = require('async');
+const _ = require('lodash');
 const {
 	transfer,
 	castVotes,
@@ -467,6 +468,8 @@ describe('rounds', () => {
 				});
 
 				it('delegates with highest weight used for generating list should be the same for same round', async () => {
+					console.log('_.diff(tick.before.delegatesOrderedByVote,tick.after.delegatesOrderedByVote) ');
+					console.log(_.difference(tick.before.delegatesOrderedByVote, tick.after.delegatesOrderedByVote) );
 					if (tick.isLastBlockOfRound) {
 						return expect(tick.before.delegatesOrderedByVote).to.not.deep.equal(
 							tick.after.delegatesOrderedByVote

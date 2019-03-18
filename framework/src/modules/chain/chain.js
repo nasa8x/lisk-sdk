@@ -267,7 +267,7 @@ module.exports = class Chain {
 		} else if (code === undefined || code === null) {
 			code = 0;
 		}
-		this.logger.info('Cleaning chain...');
+		this.logger.info('Cleaning Chain module...');
 
 		if (webSocket) {
 			webSocket.removeAllListeners('fail');

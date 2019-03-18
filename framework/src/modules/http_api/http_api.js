@@ -103,7 +103,7 @@ module.exports = class HttpApi {
 		} else if (code === undefined || code === null) {
 			code = 0;
 		}
-		this.logger.info('Cleaning HTTP API...');
+		this.logger.info('Cleaning HTTP API module...');
 
 		try {
 			if (components !== undefined) {

@@ -50,8 +50,9 @@ describe('Application', () => {
 			);
 		});
 
-		// TODO: Investigate why this expectation is not working
-		it.skip('should set global.constants variable with given constants object', () => {
+		it('should set global.constants variable with given constants object', () => {
+			validator.validateWithDefaults.mockReturnValue(params.constants);
+
 			// Act
 			// eslint-disable-next-line no-unused-vars
 			const app = new Application(

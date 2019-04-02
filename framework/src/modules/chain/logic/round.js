@@ -14,11 +14,8 @@
 
 'use strict';
 
-const Promise = require('bluebird');
-const Bignum = require('../helpers/bignum');
-
-const exceptions = global.exceptions;
-const { ACTIVE_DELEGATES } = global.constants;
+const Bignum = require('../helpers/bignum.js');
+const RoundChanges = require('../helpers/round_changes.js');
 
 /**
  * Validates required scope properties.
@@ -295,57 +292,12 @@ class Round {
 	}
 
 	/**
-	 * Calculates rewards at round position.
-	 * Fees and feesRemaining based on slots.
-	 *
-	 * @param {number} index
-	 * @returns {Object} With fees, feesRemaining, rewards, balance
-	 */
-	rewardsAtRound(index) {
-		let roundFees = Math.floor(this.scope.roundFees) || 0;
-		const roundRewards = this.scope.roundRewards || [];
-
-		// Apply exception for round if required
-		if (exceptions.rounds[this.scope.round]) {
-			// Apply rewards factor
-			roundRewards.forEach((reward, subIndex) => {
-				roundRewards[subIndex] = new Bignum(reward.toPrecision(15))
-					.multipliedBy(exceptions.rounds[this.scope.round].rewards_factor)
-					.integerValue(Bignum.ROUND_FLOOR);
-			});
-
-			// Apply fees factor and bonus
-			roundFees = new Bignum(roundFees.toPrecision(15))
-				.multipliedBy(exceptions.rounds[this.scope.round].fees_factor)
-				.plus(exceptions.rounds[this.scope.round].fees_bonus)
-				.integerValue(Bignum.ROUND_FLOOR);
-		}
-
-		const fees = new Bignum(roundFees.toPrecision(15))
-			.dividedBy(ACTIVE_DELEGATES)
-			.integerValue(Bignum.ROUND_FLOOR);
-		const feesRemaining = new Bignum(roundFees.toPrecision(15)).minus(
-			fees.multipliedBy(ACTIVE_DELEGATES)
-		);
-		const rewards =
-			new Bignum(roundRewards[index].toPrecision(15)).integerValue(
-				Bignum.ROUND_FLOOR
-			) || 0;
-
-		return {
-			fees: Number(fees.toFixed()),
-			feesRemaining: Number(feesRemaining.toFixed()),
-			rewards: Number(rewards.toFixed()),
-			balance: Number(fees.plus(rewards).toFixed()),
-		};
-	}
-
-	/**
 	 * For each delegate calls mergeAccountAndGet and creates an address array.
 	 *
 	 * @returns {function} Promise with address array
 	 */
 	applyRound() {
+		const roundChanges = new RoundChanges(this.scope);
 		const queries = [];
 		const self = this;
 		let changes;
@@ -366,7 +318,7 @@ class Round {
 		// Apply round changes to each delegate
 		for (let i = 0; i < self.scope.roundDelegates.length; i++) {
 			delegate = self.scope.roundDelegates[i];
-			changes = this.rewardsAtRound(i);
+			changes = roundChanges.at(i);
 
 			this.scope.library.logger.trace('Delegate changes', {
 				delegate,
@@ -415,7 +367,7 @@ class Round {
 		const remainderDelegate = delegates[remainderIndex];
 
 		// Get round changes for chosen delegate
-		changes = this.rewardsAtRound(remainderIndex);
+		changes = roundChanges.at(remainderIndex);
 
 		// Apply fees remaining to chosen delegate
 		if (changes.feesRemaining > 0) {

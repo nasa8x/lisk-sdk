@@ -517,6 +517,7 @@ class Account {
 			// Run all db operations in a batch
 			return dbTx.batch(promises);
 		};
+
 		return (tx
 			? job(tx)
 			: this.scope.storage.entities.Account.begin('logic:account:merge', job)

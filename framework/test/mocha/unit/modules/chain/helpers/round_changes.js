@@ -14,6 +14,7 @@
 
 'use strict';
 
+const Bignum = require('../../../../../../src/modules/chain/helpers/bignum');
 const RoundChanges = require('../../../../../../src/modules/chain/helpers/round_changes.js');
 
 describe('RoundChanges', () => {
@@ -29,6 +30,10 @@ describe('RoundChanges', () => {
 	});
 
 	describe('constructor', () => {
+		afterEach(async () => {
+			global.exceptions.rounds = {};
+		});
+
 		it('should accept valid scope', async () => {
 			const roundChanges = new RoundChanges(validScope);
 
@@ -60,6 +65,34 @@ describe('RoundChanges', () => {
 			const roundChanges = new RoundChanges(validScope);
 
 			return expect(roundChanges.roundFees).equal(Infinity);
+		});
+
+		it('should apply exeption for round', async () => {
+			// Prepare
+			const scope = _.cloneDeep(validScope);
+			const [rewards_factor, fees_factor, fees_bonus] = [2, 2, 10000000];
+			global.exceptions.rounds = {
+				[scope.round]: { rewards_factor, fees_factor, fees_bonus },
+			};
+
+			// Act
+			const roundChanges = new RoundChanges(scope);
+
+			const roundRewards = validScope.roundRewards.map(reward => {
+				return new Bignum(reward.toPrecision(15))
+					.multipliedBy(rewards_factor)
+					.integerValue(Bignum.ROUND_FLOOR);
+			});
+
+			const roundFees = new Bignum(validScope.roundFees.toPrecision(15))
+				.multipliedBy(fees_factor)
+				.plus(fees_bonus)
+				.integerValue(Bignum.ROUND_FLOOR)
+				.toNumber();
+
+			// Assert
+			expect(roundChanges.roundFees.toNumber()).equal(roundFees);
+			expect(_.isEqual(roundRewards, roundChanges.roundRewards)).to.be.ok;
 		});
 	});
 

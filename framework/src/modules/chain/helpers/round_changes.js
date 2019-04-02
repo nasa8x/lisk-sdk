@@ -64,9 +64,11 @@ RoundChanges.prototype.at = function(index) {
 	const fees = new Bignum(this.roundFees.toPrecision(15))
 		.dividedBy(ACTIVE_DELEGATES)
 		.integerValue(Bignum.ROUND_FLOOR);
+
 	const feesRemaining = new Bignum(this.roundFees.toPrecision(15)).minus(
 		fees.multipliedBy(ACTIVE_DELEGATES)
 	);
+
 	const rewards =
 		new Bignum(this.roundRewards[index].toPrecision(15)).integerValue(
 			Bignum.ROUND_FLOOR

@@ -15,7 +15,6 @@
 'use strict';
 
 const _ = require('lodash');
-const ed = require('../helpers/ed');
 const Bignum = require('../helpers/bignum');
 const BlockReward = require('./block_reward');
 
@@ -57,6 +56,8 @@ class Account {
 		library = {
 			logger,
 		};
+
+		this.attachModelandSchema();
 
 		// Obtains fields from model
 		this.fields = this.model.map(field => {
@@ -161,46 +162,6 @@ class Account {
 	}
 
 	/**
-	 * Normalizes address and creates binary buffers to insert.
-	 *
-	 * @param {Object} raw - With address and public key
-	 * @returns {Object} Normalized address
-	 */
-	toDB(raw) {
-		this.binary.forEach(field => {
-			if (raw[field]) {
-				raw[field] = ed.hexToBuffer(raw[field]);
-			}
-		});
-
-		// Normalize address
-		raw.address = String(raw.address).toUpperCase();
-
-		return raw;
-	}
-
-	/**
-	 * Gets multisignature account information for specified fields and filter criteria.
-	 *
-	 * @param {Object} filter - Contains address
-	 * @param {Object|function} fields - Table fields
-	 * @param {function} cb - Callback function
-	 * @param {Object} tx - Database transaction/task object
-	 * @returns {setImmediate} error, object or null
-	 */
-	getMultiSignature(filter, fields, cb, tx) {
-		if (typeof fields === 'function') {
-			tx = cb;
-			cb = fields;
-			fields = null;
-		}
-
-		filter.multiMin_gt = 0;
-
-		this.get(filter, fields, cb, tx);
-	}
-
-	/**
 	 * Gets account information for specified fields and filter criteria.
 	 *
 	 * @param {Object} filter - Contains address
@@ -302,30 +263,6 @@ class Account {
 			.decimalPlaces(2);
 
 		return !approvalBignum.isNaN() ? approvalBignum.toNumber() : 0;
-	}
-
-	/**
-	 * Sets fields for specific address in mem_accounts table.
-	 *
-	 * @param {address} address
-	 * @param {Object} fields
-	 * @param {function} cb - Callback function
-	 * @param {Object} tx - Database transaction/task object
-	 * @returns {setImmediate} error
-	 */
-	set(address, fields, cb, tx) {
-		// Verify public key
-		this.verifyPublicKey(fields.publicKey);
-
-		// Normalize address
-		fields.address = address;
-
-		this.scope.storage.entities.Account.upsert({ address }, fields, {}, tx)
-			.then(() => setImmediate(cb))
-			.catch(err => {
-				library.logger.error(err.stack);
-				return setImmediate(cb, 'Account#set error');
-			});
 	}
 
 	/**
@@ -496,241 +433,227 @@ class Account {
 	}
 
 	/**
-	 * Removes an account from mem_account table based on address.
-	 *
-	 * @param {address} address
-	 * @param {function} cb - Callback function
-	 * @returns {setImmediate} error, address
+	 * @typedef {Object} account
+	 * @property {string} username - Lowercase, between 1 and 20 chars
+	 * @property {boolean} isDelegate
+	 * @property {boolean} secondSignature
+	 * @property {address} address - Uppercase, between 1 and 22 chars
+	 * @property {publicKey} publicKey
+	 * @property {publicKey} secondPublicKey
+	 * @property {number} balance - Between 0 and totalAmount from constants
+	 * @property {number} vote
+	 * @property {number} rank
+	 * @property {String[]} delegates - From mem_account2delegates table, filtered by address
+	 * @property {String[]} multisignatures - From mem_account2multisignatures table, filtered by address
+	 * @property {number} multimin - Between 0 and 17
+	 * @property {number} multilifetime - Between 1 and 72
+	 * @property {boolean} nameexist
+	 * @property {number} producedBlocks
+	 * @property {number} missedBlocks
+	 * @property {number} fees
+	 * @property {number} rewards
 	 */
-	remove(address, cb) {
-		this.scope.storage.entities.Account.delete({ address })
-			.then(() => setImmediate(cb, null, address))
-			.catch(err => {
-				library.logger.error(err.stack);
-				return setImmediate(cb, 'Account#remove error');
-			});
-	}
-}
+	// TODO: TO maintain backward compatibility, have to user prototype otherwise these must be converted to static attributes
+	attachModelandSchema() {
+		this.table = 'mem_accounts';
 
-/**
- * @typedef {Object} account
- * @property {string} username - Lowercase, between 1 and 20 chars
- * @property {boolean} isDelegate
- * @property {boolean} secondSignature
- * @property {address} address - Uppercase, between 1 and 22 chars
- * @property {publicKey} publicKey
- * @property {publicKey} secondPublicKey
- * @property {number} balance - Between 0 and totalAmount from constants
- * @property {number} vote
- * @property {number} rank
- * @property {String[]} delegates - From mem_account2delegates table, filtered by address
- * @property {String[]} multisignatures - From mem_account2multisignatures table, filtered by address
- * @property {number} multimin - Between 0 and 17
- * @property {number} multilifetime - Between 1 and 72
- * @property {boolean} nameexist
- * @property {number} producedBlocks
- * @property {number} missedBlocks
- * @property {number} fees
- * @property {number} rewards
- */
-// TODO: TO maintain backward compatibility, have to user prototype otherwise these must be converted to static attributes
-Account.prototype.table = 'mem_accounts';
+		this.model = [
+			{
+				name: 'username',
+				type: 'String',
+				conv: String,
+				immutable: true,
+			},
+			{
+				name: 'isDelegate',
+				type: 'SmallInt',
+				conv: Boolean,
+			},
+			{
+				name: 'secondSignature',
+				type: 'SmallInt',
+				conv: Boolean,
+			},
+			{
+				name: 'address',
+				type: 'String',
+				conv: String,
+				immutable: true,
+			},
+			{
+				name: 'publicKey',
+				type: 'Binary',
+				conv: String,
+				immutable: true,
+			},
+			{
+				name: 'secondPublicKey',
+				type: 'Binary',
+				conv: String,
+				immutable: true,
+			},
+			{
+				name: 'balance',
+				type: 'BigInt',
+				conv: Number,
+			},
+			{
+				name: 'rank',
+				type: 'BigInt',
+				conv: String,
+			},
+			{
+				name: 'votedDelegatesPublicKeys',
+				type: 'Text',
+				conv: Array,
+			},
+			{
+				name: 'membersPublicKeys',
+				type: 'Text',
+				conv: Array,
+			},
+			{
+				name: 'multiMin',
+				type: 'SmallInt',
+				conv: Number,
+			},
+			{
+				name: 'multiLifetime',
+				type: 'SmallInt',
+				conv: Number,
+			},
+			{
+				name: 'nameExist',
+				type: 'SmallInt',
+				conv: Boolean,
+			},
+			{
+				name: 'fees',
+				type: 'BigInt',
+				conv: Number,
+			},
+			{
+				name: 'rank',
+				type: 'BigInt',
+				conv: Number,
+			},
+			{
+				name: 'rewards',
+				type: 'BigInt',
+				conv: Number,
+			},
+			{
+				name: 'vote',
+				type: 'BigInt',
+				conv: Number,
+			},
+			{
+				name: 'producedBlocks',
+				type: 'integer',
+				conv: Number,
+			},
+			{
+				name: 'missedBlocks',
+				type: 'integer',
+				conv: Number,
+			},
+			{
+				name: 'approval',
+				type: 'integer',
+			},
+			{
+				name: 'productivity',
+				type: 'integer',
+			},
+		];
 
-Account.prototype.model = [
-	{
-		name: 'username',
-		type: 'String',
-		conv: String,
-		immutable: true,
-	},
-	{
-		name: 'isDelegate',
-		type: 'SmallInt',
-		conv: Boolean,
-	},
-	{
-		name: 'secondSignature',
-		type: 'SmallInt',
-		conv: Boolean,
-	},
-	{
-		name: 'address',
-		type: 'String',
-		conv: String,
-		immutable: true,
-	},
-	{
-		name: 'publicKey',
-		type: 'Binary',
-		conv: String,
-		immutable: true,
-	},
-	{
-		name: 'secondPublicKey',
-		type: 'Binary',
-		conv: String,
-		immutable: true,
-	},
-	{
-		name: 'balance',
-		type: 'BigInt',
-		conv: Number,
-	},
-	{
-		name: 'rank',
-		type: 'BigInt',
-		conv: String,
-	},
-	{
-		name: 'votedDelegatesPublicKeys',
-		type: 'Text',
-		conv: Array,
-	},
-	{
-		name: 'membersPublicKeys',
-		type: 'Text',
-		conv: Array,
-	},
-	{
-		name: 'multiMin',
-		type: 'SmallInt',
-		conv: Number,
-	},
-	{
-		name: 'multiLifetime',
-		type: 'SmallInt',
-		conv: Number,
-	},
-	{
-		name: 'nameExist',
-		type: 'SmallInt',
-		conv: Boolean,
-	},
-	{
-		name: 'fees',
-		type: 'BigInt',
-		conv: Number,
-	},
-	{
-		name: 'rank',
-		type: 'BigInt',
-		conv: Number,
-	},
-	{
-		name: 'rewards',
-		type: 'BigInt',
-		conv: Number,
-	},
-	{
-		name: 'vote',
-		type: 'BigInt',
-		conv: Number,
-	},
-	{
-		name: 'producedBlocks',
-		type: 'integer',
-		conv: Number,
-	},
-	{
-		name: 'missedBlocks',
-		type: 'integer',
-		conv: Number,
-	},
-	{
-		name: 'approval',
-		type: 'integer',
-	},
-	{
-		name: 'productivity',
-		type: 'integer',
-	},
-];
-
-Account.prototype.schema = {
-	id: 'Account',
-	type: 'object',
-	properties: {
-		username: {
-			type: 'string',
-			format: 'username',
-		},
-		isDelegate: {
-			type: 'integer',
-			maximum: 32767,
-		},
-		secondSignature: {
-			type: 'integer',
-			maximum: 32767,
-		},
-		address: {
-			type: 'string',
-			format: 'address',
-			minLength: 1,
-			maxLength: 22,
-		},
-		publicKey: {
-			type: 'string',
-			format: 'publicKey',
-		},
-		secondPublicKey: {
-			anyOf: [
-				{
+		this.schema = {
+			id: 'Account',
+			type: 'object',
+			properties: {
+				username: {
+					type: 'string',
+					format: 'username',
+				},
+				isDelegate: {
+					type: 'integer',
+					maximum: 32767,
+				},
+				secondSignature: {
+					type: 'integer',
+					maximum: 32767,
+				},
+				address: {
+					type: 'string',
+					format: 'address',
+					minLength: 1,
+					maxLength: 22,
+				},
+				publicKey: {
 					type: 'string',
 					format: 'publicKey',
 				},
-				{
-					type: 'null',
+				secondPublicKey: {
+					anyOf: [
+						{
+							type: 'string',
+							format: 'publicKey',
+						},
+						{
+							type: 'null',
+						},
+					],
 				},
-			],
-		},
-		balance: {
-			type: 'object',
-			format: 'amount',
-		},
-		delegates: {
-			anyOf: [
-				{
-					type: 'array',
-					uniqueItems: true,
+				balance: {
+					type: 'object',
+					format: 'amount',
 				},
-				{
-					type: 'null',
+				delegates: {
+					anyOf: [
+						{
+							type: 'array',
+							uniqueItems: true,
+						},
+						{
+							type: 'null',
+						},
+					],
 				},
-			],
-		},
-		nameExist: {
-			type: 'integer',
-			maximum: 32767,
-		},
-		fees: {
-			type: 'object',
-			format: 'amount',
-		},
-		rank: {
-			type: 'string',
-		},
-		rewards: {
-			type: 'object',
-			format: 'amount',
-		},
-		vote: {
-			type: 'integer',
-		},
-		producedBlocks: {
-			type: 'integer',
-		},
-		missedBlocks: {
-			type: 'integer',
-		},
-		approval: {
-			type: 'integer',
-		},
-		productivity: {
-			type: 'integer',
-		},
-	},
-	required: ['address', 'balance'],
-};
+				nameExist: {
+					type: 'integer',
+					maximum: 32767,
+				},
+				fees: {
+					type: 'object',
+					format: 'amount',
+				},
+				rank: {
+					type: 'string',
+				},
+				rewards: {
+					type: 'object',
+					format: 'amount',
+				},
+				vote: {
+					type: 'integer',
+				},
+				producedBlocks: {
+					type: 'integer',
+				},
+				missedBlocks: {
+					type: 'integer',
+				},
+				approval: {
+					type: 'integer',
+				},
+				productivity: {
+					type: 'integer',
+				},
+			},
+			required: ['address', 'balance'],
+		};
+	}
+}
 
 // Export
 module.exports = Account;

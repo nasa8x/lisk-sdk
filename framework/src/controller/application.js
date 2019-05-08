@@ -110,7 +110,7 @@ class Application {
 	 * @throws Framework.errors.SchemaValidationError
 	 */
 	constructor(genesisBlock, config = {}) {
-		validator.validate(genesisBlockSchema, genesisBlock);
+		// validator.validate(genesisBlockSchema, genesisBlock);
 
 		// Don't change the object parameters provided
 		let appConfig = _.cloneDeep(config);

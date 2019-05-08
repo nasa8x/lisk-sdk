@@ -25,11 +25,7 @@ module.exports = async ({
 	const Block = require('../logic/block.js');
 	const Account = require('../logic/account.js');
 
-	const accountLogic = await new Promise((resolve, reject) => {
-		new Account(storage, schema, logger, (err, object) => {
-			err ? reject(err) : resolve(object);
-		});
-	});
+	const accountLogic = await new Account(storage, schema, logger);
 
 	const initTransactionLogic = new InitTransaction({
 		registeredTransactions,

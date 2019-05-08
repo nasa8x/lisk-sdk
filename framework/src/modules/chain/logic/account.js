@@ -41,68 +41,69 @@ const __private = {};
  * @param {function} cb - Callback function
  * @property {account_model} model
  * @property {account_schema} schema
- * @returns {setImmediate} error, this
+ * @returns {Promise} this
  * @todo Add description for the params
  */
 class Account {
-	constructor(storage, schema, logger, cb) {
-		this.scope = {
-			schema,
-			storage,
-		};
+	constructor(storage, schema, logger) {
+		return new Promise(resolve => {
+			this.scope = {
+				schema,
+				storage,
+			};
 
-		__private.blockReward = new BlockReward();
+			__private.blockReward = new BlockReward();
 
-		library = {
-			logger,
-		};
+			library = {
+				logger,
+			};
 
-		this.attachModelandSchema();
+			this.attachModelandSchema();
 
-		// Obtains fields from model
-		this.fields = this.model.map(field => {
-			const _tmp = {};
+			// Obtains fields from model
+			this.fields = this.model.map(field => {
+				const _tmp = {};
 
-			if (field.expression) {
-				_tmp.expression = field.expression;
-			} else {
-				if (field.mod) {
-					_tmp.expression = field.mod;
+				if (field.expression) {
+					_tmp.expression = field.expression;
+				} else {
+					if (field.mod) {
+						_tmp.expression = field.mod;
+					}
+					_tmp.field = field.name;
 				}
-				_tmp.field = field.name;
-			}
-			if (_tmp.expression || field.alias) {
-				_tmp.alias = field.alias || field.name;
-			}
+				if (_tmp.expression || field.alias) {
+					_tmp.alias = field.alias || field.name;
+				}
 
-			_tmp.computedField = field.computedField || false;
+				_tmp.computedField = field.computedField || false;
 
-			return _tmp;
+				return _tmp;
+			});
+
+			// Obtains binary fields from model
+			this.binary = [];
+			this.model.forEach(field => {
+				if (field.type === 'Binary') {
+					this.binary.push(field.name);
+				}
+			});
+
+			// Obtains conv from model
+			this.conv = {};
+			this.model.forEach(field => {
+				this.conv[field.name] = field.conv;
+			});
+
+			// Obtains editable fields from model
+			this.editable = [];
+			this.model.forEach(field => {
+				if (!field.immutable) {
+					this.editable.push(field.name);
+				}
+			});
+			resolve(this);
 		});
-
-		// Obtains binary fields from model
-		this.binary = [];
-		this.model.forEach(field => {
-			if (field.type === 'Binary') {
-				this.binary.push(field.name);
-			}
-		});
-
-		// Obtains conv from model
-		this.conv = {};
-		this.model.forEach(field => {
-			this.conv[field.name] = field.conv;
-		});
-
-		// Obtains editable fields from model
-		this.editable = [];
-		this.model.forEach(field => {
-			if (!field.immutable) {
-				this.editable.push(field.name);
-			}
-		});
-
-		return setImmediate(cb, null, this);
 	}
 
 	// Public methods

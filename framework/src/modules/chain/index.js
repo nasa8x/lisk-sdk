@@ -81,8 +81,6 @@ module.exports = class ChainModule extends BaseModule {
 				this.chain.actions.getTransactionsFromPool(action),
 			getTransactions: async () => this.chain.actions.getTransactions(),
 			getSignatures: async () => this.chain.actions.getSignatures(),
-			getLastCommit: async () => this.chain.actions.getLastCommit(),
-			getBuild: async () => this.chain.actions.getBuild(),
 			postTransaction: async action =>
 				this.chain.actions.postTransaction(action),
 			getDelegateBlocksRewards: async action =>

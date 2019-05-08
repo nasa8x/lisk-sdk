@@ -460,12 +460,9 @@ describe('account', () => {
 	});
 
 	describe('resetMemTables', () => {
-		it('should remove the tables', done => {
-			account.resetMemTables((err, res) => {
-				expect(err).to.not.exist;
-				expect(res).to.be.undefined;
-				done();
-			});
+		it('should remove the tables', async () => {
+			const result = await account.resetMemTables();
+			expect(result).to.be.undefined;
 		});
 	});
 

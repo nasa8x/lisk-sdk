@@ -130,13 +130,13 @@ class Account {
 	 * @param {function} cb - Callback function
 	 * @returns {setImmediate} error
 	 */
-	resetMemTables(cb) {
-		this.scope.storage.entities.Account.resetMemTables()
-			.then(() => setImmediate(cb))
-			.catch(err => {
-				library.logger.error(err.stack);
-				return setImmediate(cb, new Error('Account#resetMemTables error'));
-			});
+	async resetMemTables() {
+		try {
+			return await this.scope.storage.entities.Account.resetMemTables();
+		} catch (error) {
+			library.logger.error(error.stack);
+			throw new Error('Account#resetMemTables error');
+		}
 	}
 
 	/**

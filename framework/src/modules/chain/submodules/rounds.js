@@ -16,7 +16,7 @@
 
 const Bignumber = require('bignumber.js');
 const async = require('async');
-// eslint-disable-next-line prefer-const
+const cryptography = require('@liskhq/lisk-cryptography');
 const { CACHE_KEYS_DELEGATES } = require('../../../components/cache');
 const Round = require('../logic/round');
 const slots = require('../helpers/slots');
@@ -462,7 +462,7 @@ __private.getOutsiders = function(scope, cb, tx) {
 				(delegate, eachCb) => {
 					if (scope.roundDelegates.indexOf(delegate) === -1) {
 						scope.roundOutsiders.push(
-							modules.accounts.generateAddressByPublicKey(delegate)
+							cryptography.getAddressFromPublicKey(delegate)
 						);
 					}
 					return setImmediate(eachCb);

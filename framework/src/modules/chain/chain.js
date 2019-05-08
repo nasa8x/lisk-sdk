@@ -36,9 +36,6 @@ const {
 	initModules,
 } = require('./init_steps');
 
-// Begin reading from stdin
-process.stdin.resume();
-
 // Read build version from file
 // TODO: Remove from framework
 const versionBuild = 'version-0.1.0';
@@ -312,6 +309,7 @@ module.exports = class Chain {
 		await Promise.all(
 			Object.keys(modules).map(key => {
 				if (typeof modules[key].cleanup === 'function') {
+					console.log('cleanup', key);
 					return modules[key].cleanup();
 				}
 				return true;

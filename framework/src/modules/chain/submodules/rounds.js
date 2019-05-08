@@ -50,6 +50,7 @@ class Rounds {
 	constructor(cb, scope) {
 		library = {
 			channel: scope.channel,
+			logic: scope.logic,
 			logger: scope.components.logger,
 			bus: scope.bus,
 			storage: scope.components.storage,
@@ -94,7 +95,6 @@ class Rounds {
 
 		const scope = {
 			library,
-			modules,
 			block,
 			round,
 			backwards: true,
@@ -188,7 +188,6 @@ class Rounds {
 
 		const scope = {
 			library,
-			modules,
 			block,
 			round,
 			backwards: false,
